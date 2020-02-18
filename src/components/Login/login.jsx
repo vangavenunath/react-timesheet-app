@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import axios from 'axios';
 import { Default } from 'react-awesome-spinners'
 import './login.css'
+import { BASE_URL } from "../constants";
 
 export default class Login extends Component {
   constructor(props) {
@@ -10,7 +11,8 @@ export default class Login extends Component {
     this.state = {
       username: "",
       password: "",
-      loading:false
+      loading: false,
+      errorMsg: ""
     };
   }
 
@@ -26,39 +28,38 @@ export default class Login extends Component {
 
   handleSubmit = event => {
     event.preventDefault();
-    const userpass = btoa(this.state.username+':'+this.state.password)
-    this.setState({loading:true})
+    const userpass = btoa(this.state.username + ':' + this.state.password)
+    this.setState({ loading: true })
     axios({
       method: 'POST',
-      url: 'https://dev.itcc.net.au/venu/python/',
+      url: BASE_URL,
       data: this.state,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + userpass
       }
     })
-    // axios({
-    //     method: 'GET',
-    //     url: 'https://dev.itcc.net.au/venu/python/',
-    //     data: '',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Authorization': 'Basic ' + userpass
-    //     }
-    //   })
       .then((response) => {
-        console.log(response)
-    //   this.props.setIsLogin(false)
+        if (response.data.toString() !== '') {
+          this.props.setIsLogin(false)
+          this.props.setIsAdmin(this.state.username == "admin")
+          this.props.setUsername(this.state.username)
+          this.setState({ errorMsg: "" })
+        }
+        else {
+          this.setState({ errorMsg: "Invalid username or password" })
+        }
       })
       .catch(err => alert(err))
-      .finally(() => this.setState({loading:false}))
+      .finally(() => this.setState({ loading: false }))
   }
 
   render() {
     return (
-      <div className = "main">
-        <h1>Welcome to Team Timesheet Portal</h1>
+      <div className="main">
+        
         <form className="loginContainer" onSubmit={this.handleSubmit}>
+        <h1 text-align="left">Welcome to Team Timesheet Portal</h1>
           <input className="textbox" id="username" type="text"
             onChange={this.handleChange}
             placeholder="Enter Username"
@@ -67,11 +68,12 @@ export default class Login extends Component {
             onChange={this.handleChange}
             placeholder="Enter Password"
           />
-          <br/>
-          <input className="submitButton" type="submit" disabled={!this.validateForm()} value="Login"/>
+          <br />
+          <input className="submitButton" type="submit" disabled={!this.validateForm()} value="Login" />
+          {this.state.errorMsg}
         </form>
         <div className="loadingIcon">
-        {this.state.loading && <Default color="red"/>}
+          {this.state.loading && <Default color="red" />}
         </div>
       </div>
     );
