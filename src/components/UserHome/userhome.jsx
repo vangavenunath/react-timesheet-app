@@ -5,6 +5,8 @@ import {StyledInput, Button} from '../styles/commonStyles'
 import axios from 'axios';
 import { BASE_URL } from '../constants';
 import DataTable, { createTheme } from 'react-data-table-component';
+import CKEditor from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 export const UserHome = (props) => {
     const [date, setDate] = useState(new Date('2020-02-18'))
@@ -19,11 +21,14 @@ export const UserHome = (props) => {
     },[props.username])
 
     const getLoginTimes = () => {
-        const requestData = {username: props.username}
+        const requestData = {username: [props.username]}
         console.log('=======requestData=========',requestData)
+        // let Editor = CKEditor.inline( 'textarea', {
+        //     removePlugins: 'toolbar',
+        // } );
         axios({
-            method: 'GET',
-            url: BASE_URL+'user_log/'+props.username,
+            method: 'POST',
+            url: BASE_URL+'userlog',
             data: requestData,
             headers: {
               'Content-Type': 'application/json'
@@ -36,14 +41,18 @@ export const UserHome = (props) => {
               let arr = []
               console.log("===================arr1=========",arr1, typeof(arr1))
               for (var row = 0; row < arr1.length; row++) {
-                arr.push({ username: arr1[row][0], create_date: arr1[row][1], start_time: arr1[row][2], end_time: arr1[row][3], comment: arr1[row][4] })
+                arr.push({ create_date: arr1[row][1], start_time: arr1[row][2], end_time: arr1[row][3], comment: <CKEditor
+                    editor={ ClassicEditor }
+                    config = {{toolbar : []}} //{removePlugins: 'toolbar', allowedContent: 'p h1 h2 strong em; a[!href]; img[!src,width,height];'}
+                    disabled = {true}
+                    data={arr1[row][4]}/> }) //username: arr1[row][0],
               }
               setTableDataItems(arr)              
             })       
     }
 
     const handleClick = () => {
-        const userFormDetails = {username: props.username, create_date:date.toISOString().split('T')[0], start_time:fromTime, end_time: toTime, comment:comment}
+        const userFormDetails = {username: props.username, create_date:new Date(date.valueOf()+11*60*60000).toISOString().split('T')[0], start_time:fromTime, end_time: toTime, comment:comment}
         console.log(date.toISOString().split('T')[0],fromTime,toTime,comment)
         axios({
             method: 'POST',
@@ -65,13 +74,13 @@ export const UserHome = (props) => {
     }
 
     const columns = [
+        // {
+        //   name: 'Username',
+        //   selector: 'username',
+        //   sortable: true,
+        // },
         {
-          name: 'Username',
-          selector: 'username',
-          sortable: true,
-        },
-        {
-          name: 'Create Date',
+          name: 'Date Logged',
           selector: 'create_date',
           sortable: true,
         },
@@ -101,8 +110,25 @@ export const UserHome = (props) => {
             <TimeField value={fromTime} onChange={(evt) => setFromTime(evt.target.value)} />
             <label>To Time</label>
             <TimeField value={toTime} onChange={(evt) => setToTime(evt.target.value)} />
-            <textarea  onChange={(evt) => setComment(evt.target.value)}/>
-            {/* <StyledInput type="text" onChange={(evt) => setComment(evt.target.value)}/> */}
+            <CKEditor
+                    editor={ ClassicEditor }
+                    data=""
+                    onInit={ editor => {
+                        // You can store the "editor" and use when it is needed.
+                        console.log( 'Editor is ready to use!', editor );
+                    } }
+                    onChange={ ( event, editor ) => {
+                        const data = editor.getData();
+                        setComment(data)
+                        console.log( { event, editor, data } );
+                    } }
+                    onBlur={ ( event, editor ) => {
+                        console.log( 'Blur.', editor );
+                    } }
+                    onFocus={ ( event, editor ) => {
+                        console.log( 'Focus.', editor );
+                    } }
+                />
             <Button onClick={handleClick}>Log Time</Button>
             <Button onClick={logout}>Log Out</Button>
             <DataTable
